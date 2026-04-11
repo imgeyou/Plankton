@@ -1,0 +1,41 @@
+body {
+  background-color: #000;
+  margin: 0;
+  overflow: hidden;
+}
+
+/* ---- large main view ---- */
+#effect-view {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+#effect-video {
+  display: none;
+}
+
+/* ---- small PiP ---- */
+#sketch-view {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 240px;
+  height: 180px;
+  z-index: 10;
+  border: 2px solid #fff;
+  border-radius: 10px;
+}
+
+#sketch-video {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 240px;
+  height: 180px;
+  z-index: 9;
+  border: 2px solid #fff;
+  border-radius: 10px;
+  object-fit: cover;
+}
