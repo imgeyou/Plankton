@@ -1,3 +1,5 @@
+// https://github.com/JoTrdl/starfluid/blob/master/src/shaders/visualizer.html | Copyright (c) 2015 Johann Troendle
+
 precision highp float;
 varying vec2 vUv;
 uniform sampler2D sampler;

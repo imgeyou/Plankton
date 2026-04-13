@@ -1,3 +1,5 @@
+// used to load the .glsl shader files before the app starts:
+
 (function () {
   var shaders = [
     { id: 'fluid-motion',          file: 'shaders/fluid-motion.glsl' },
@@ -10,13 +12,14 @@
   ];
 
   shaders.forEach(function (s) {
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', s.file, false); // synchronous so shaders are ready before library scripts run
-    xhr.send();
-    var el = document.createElement('script');
-    el.type = 'application/x-glsl';
-    el.id = s.id;
-    el.textContent = xhr.responseText;
-    document.head.appendChild(el);
+    var request = new XMLHttpRequest();
+    request.open('GET', s.file, false); // open a GET request for the file
+    request.send();// send the request (fetch the file)
+
+    var scripts = document.createscriptsement('script');//added to the html
+    scripts.type = 'application/x-glsl';
+    scripts.id = s.id;
+    scripts.textContent = request.responseText;
+    document.head.appendChild(scripts);
   });
 })();

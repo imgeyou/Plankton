@@ -1,3 +1,4 @@
+// https://github.com/JoTrdl/starfluid/blob/master/src/js/fluid.js | Copyright (c) 2015 Johann Troendle
 
 (function() {
 
@@ -18,6 +19,7 @@
         'dt': { type: '1f', value: TIMESTEP },
         'motion': {type: 't', value: ctx.effects['motion'].motion.output}
       };
+      
       this.solver = new RTT(gl, {
         width: CELLS,
         height: CELLS,

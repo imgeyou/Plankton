@@ -1,8 +1,10 @@
+//particle pos
 precision highp float;
 attribute vec2 position;
 varying vec2 vUv;
 uniform sampler2D particleData;
 uniform float ratio;
+
 void main() {
   vec4 data = texture2D(particleData, position);
   vec2 point = data.xy;
