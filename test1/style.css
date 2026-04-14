@@ -4,18 +4,6 @@ body {
   overflow: hidden;
 }
 
-/* ---- large main view ---- */
-#effect-view {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 1;
-}
-
-#effect-video {
-  display: none;
-}
-
 /* ---- small PiP ---- */
 #sketch-view {
   position: absolute;

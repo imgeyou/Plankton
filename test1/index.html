@@ -24,11 +24,11 @@
     <link rel="stylesheet" type="text/css" href="style.css" />
     <meta charset="utf-8" />
 
-    <!-- StarFluid WebGL libraries -->
+    <!-- WebGL libraries -->
     <script src="js/lib/rtt.gl.js"></script>
     <script src="js/lib/stage.gl.js"></script>
 
-    <!-- StarFluid shaders (loaded from shaders/) -->
+    <!-- load shaders (loaded from shaders/) -->
     <script src="shaders/load-shaders.js"></script>
 
     <!-- StarFluid effect scripts -->
@@ -39,12 +39,11 @@
   </head>
   <body>
 
-    <video id="effect-video"></video>
-    <video id="sketch-video"></video>
+    <video id="sketch-video"></video>//small pip, showing hand tracking
 
     <script src="detection.js"></script>
     <script src="sketch.js"></script>
-    <!-- <script src="starfluid.js"></script> -->
-    <script src="effect.js"></script>
+    <script src="cpu-canvas.js"></script>
+    <script src="gpu-canvas.js"></script>
   </body>
 </html>

@@ -323,6 +323,7 @@ let effect = function (p) {
     _updateFingertips(p);
 
     _updateFlowField(flowVectors, p.width, p.height);
+    
     if (window.starfluid) window.starfluid.inject(normTips);
 
     // --- Fox gesture: index + middle up, ring + pinky down ---
