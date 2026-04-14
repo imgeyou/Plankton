@@ -38,12 +38,16 @@
     <script src="js/visualizer.js"></script>
   </head>
   <body>
+    <div id="start-overlay">Tap to begin</div> 
+    <!-- for allowing audio detection -->
 
-    <video id="sketch-video"></video>//small pip, showing hand tracking
+    <video id="sketch-video"></video>
+    <!-- small pip, showing hand tracking -->
 
     <script src="detection.js"></script>
     <script src="sketch.js"></script>
-    <script src="cpu-canvas.js"></script>
-    <script src="gpu-canvas.js"></script>
+    <script src="gpu-flowfield.js"></script>
+    <!-- <script src="cpu-canvas.js"></script> -->
+    <script src="webgl-particles.js"></script>
   </body>
 </html>

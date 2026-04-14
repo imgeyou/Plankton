@@ -1,12 +1,17 @@
-//
+// this is for reading velocityData from webGL
+// velocityData stored in window.webglFluidVelocity. Used in P5.js to direct particles movement
+
+//use IIFE bcs the referenced set-up library uses it.
+
 (function(){
+  // ------ set up canvas
   var canvas = document.createElement("canvas");
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-  canvas.style.display = "none"; //hidden flowfield
+  canvas.style.display = "none"; //hidden flowfield, only for directing movement
   document.body.appendChild(canvas);
 
-  //browser support check
+  // ------ browser support check
   var renderer;
   try {
     renderer = new Stage.Renderer(canvas);
@@ -24,21 +29,22 @@
     return;
   }
 
-  //fluid motion
+  // ------ render fluid motion -> velocity texture
   var motionEffect = new Stage.Motion();
   var fluidEffect = new Stage.Fluid();
 
   renderer.effect(motionEffect).effect(fluidEffect).render();
 
-  //CPU read back flow field velocity data
+  // ----- CPU read back flow field velocity data
   var readbackSize = 64;
   var velocityData = new Float32Array(readbackSize * readbackSize * 4);
-  var readbackReady = null; // null=untested, true=ok, false=unsupported
+  var readbackReady = null; // null->untested, true->ok, false->unsupported
   var frame = 0;
-
+  doReadback(); //velocityData stored in window.webglFluidVelocity
+  
   function doReadback() {
     requestAnimationFrame(doReadback);
-    if (!readbackReady) return;
+    if (readbackReady === false) return;
     if (++frame % 3 !== 0) return; // only every 3 frames to reduce GPU stall
 
     var solver = fluidEffect.solver;
@@ -57,8 +63,8 @@
       gl.readPixels(
         0,
         0,
-        READBACK_SIZE,
-        READBACK_SIZE,
+        readbackSize,
+        readbackSize,
         gl.RGBA,
         gl.FLOAT,
         velocityData,
@@ -73,8 +79,8 @@
 
       window.webglFluidVelocity = {
         data: velocityData,
-        w: READBACK_SIZE,
-        h: READBACK_SIZE,
+        w: readbackSize,
+        h: readbackSize,
       };
     } catch (e) {
       readbackReady = false;
@@ -84,5 +90,4 @@
       );
     }
   }
-  doReadback();
-})
+})();

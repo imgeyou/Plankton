@@ -11,7 +11,6 @@
 
     initialize: function(ctx) {
       this.ctx = ctx;
-
       var gl = ctx.gl;
 
       this.uniforms = {
@@ -19,7 +18,7 @@
         'dt': { type: '1f', value: TIMESTEP },
         'motion': {type: 't', value: ctx.effects['motion'].motion.output}
       };
-      
+
       this.solver = new RTT(gl, {
         width: CELLS,
         height: CELLS,
