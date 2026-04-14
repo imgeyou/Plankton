@@ -124,25 +124,26 @@ function updateHandDetection(width, height) {
     }
   }
 
-  // 2. calculate per-fingertip velocity vectors
+  // 2. calculate per-fingertip velocity -> flow vectors
   flowVectors = fingertips.map((tip, i) => {
     const old = _oldFingertips[i];
-    return old
-      ? { x: tip.x, y: tip.y, vx: tip.x - old.x, vy: tip.y - old.y }
-      : { x: tip.x, y: tip.y, vx: 0, vy: 0 }; //first frame
+    if (!old) return { x: tip.x, y: tip.y, vx: 0, vy: 0, v: 0 };
+    const vx = tip.x - old.x;
+    const vy = tip.y - old.y;
+    return { x: tip.x, y: tip.y, vx, vy, v: Math.sqrt(vx * vx + vy * vy) };
   });
   _oldFingertips = fingertips.slice();
 
   // 3. Hand-moving detection
-  handMoving = flowVectors.some(
-    (v) => Math.sqrt(v.vx * v.vx + v.vy * v.vy) > M_sensitivity,
-  );
+  handMoving = flowVectors.some(v => v.v > M_sensitivity);
 
-  // 4. IndexOnly gesture detextion
+  // 4. IndexOnly gesture detection
+  indexOnly = false;
   if (detections?.multiHandLandmarks) {
     for (const hand of detections.multiHandLandmarks) {
       if (indexUp && middleDown && ringDown && pinkyDown) {
-      indexOnly = true;
+        indexOnly = true;
+      }
     }
   }
 

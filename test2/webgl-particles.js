@@ -60,7 +60,7 @@
   const RENDER_VS = glsl("wp-render-vert");
   const RENDER_FS = glsl("wp-render-frag");
 
-  // ─── Compile helpers
+  // ─── Compile helpers 
   function compileShader(type, src) {
     const shader = gl.createShader(type);
     gl.shaderSource(shader, src);
