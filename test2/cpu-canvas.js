@@ -60,9 +60,9 @@ let effect = function (p) {
     // --- 1. Index-only gesture
       // eject new particles from fingertip
       if (!boomActive && !postBoomMode) {
-        if (indexOnly) {
-          // index as emitter. pos is x-mirrored to match canvas
-          const tip = { x: (1 - hand[8].x) * p.width, y: hand[8].y * p.height };
+        if (indexOnly && normTips.length > 0) {
+          // index as emitter — normTips[0] is landmark 8 (index fingertip), mirrored to match canvas
+          const tip = { x: (1 - normTips[0].x) * p.width, y: normTips[0].y * p.height };
 
           if (p.frameCount % 2 === 0) {
             if (particles.length >= maxParticleNum) particles.shift();
@@ -79,7 +79,7 @@ let effect = function (p) {
                   vx: Math.cos(angle) * speed + Math.sin(angle) * wobble,
                   vy: Math.sin(angle) * speed - Math.cos(angle) * wobble - 0.5,
                 },
-                Math.floor(p.random(10)),
+                Math.floor(p.random(particleLayers.length)),
               ),
             );
           }
@@ -386,9 +386,9 @@ class Particle {
     let t = o.frameCount * 0.005;
     let angle = o.noise(this.x * 0.003, this.y * 0.003, t + this.noiseOffset) * o.TWO_PI * 2;
 
-    let driftSpeed = 1.8 * this.depth * this.speedScale;
+    let driftSpeed = 1.8 * this.depth;
     let targetVx = o.cos(angle) * driftSpeed;
-    let targetVy = o.sin(angle) * driftSpeed - 0.18 * this.speedScale;
+    let targetVy = o.sin(angle) * driftSpeed - 0.18 * this.depth;
 
     this.vx += (targetVx - this.vx) * 0.08;
     this.vy += (targetVy - this.vy) * 0.08;
