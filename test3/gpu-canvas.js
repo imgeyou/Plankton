@@ -187,13 +187,13 @@
     let W = canvas.width;
     let H = canvas.height;
     let numTips = 0;
-    let tipArr = [0, 0];
-    let flowArr = [0, 0];
+    let fingerTip = [0, 0];
+    let flowVec = [0, 0];
     
     if (typeof flowVectorWH !== "undefined" && flowVectorWH) {
       numTips = 1;
-      tipArr = [flowVectorWH.x_WH, flowVectorWH.y_WH];
-      flowArr = [flowVectorWH.vx_WH, flowVectorWH.vy_WH];
+      fingerTip = [flowVectorWH.x_WH, flowVectorWH.y_WH];
+      flowVec = [flowVectorWH.vx_WH, flowVectorWH.vy_WH];
     }
     
     const fox = typeof foxGesture !== "undefined" && foxGesture ? 1 : 0;
@@ -217,8 +217,8 @@
     gl.uniform1f(updU.uTime, time);
     gl.uniform2f(updU.uResolution, W, H);
     gl.uniform1i(updU.uNumTips, numTips);
-    gl.uniform2fv(updU.uTips, tipArr);
-    gl.uniform2fv(updU.uFlows, flowArr);
+    gl.uniform2fv(updU.uTips, fingerTip);
+    gl.uniform2fv(updU.uFlows, flowVec);
     gl.uniform1i(updU.uFoxGesture, fox);
     gl.uniform1i(updU.uHandMoving, moving);
     gl.uniform1i(updU.uVolumeSpike, spike);
@@ -239,7 +239,7 @@
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
     gl.useProgram(renderProg);
     gl.uniform1i(renU.uNumTips, numTips);
-    gl.uniform2fv(renU.uTips, tipArr);
+    gl.uniform2fv(renU.uTips, fingerTip);
     gl.uniform1i(renU.uFoxGesture, fox);
 
     gl.bindVertexArray(drawVAO);
