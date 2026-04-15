@@ -7,10 +7,10 @@
 
 
 precision mediump float;
-uniform float pFade;
+uniform float uFade;
 out vec4 fragColor;
 
 void main() {
   //particles slowly fade away -> leave trail
-  fragColor = vec4(0.0, 0.0, 0.0, 1.0 - pFade);
+  fragColor = vec4(0.0, 0.0, 0.0, 1.0 - uFade);
 }

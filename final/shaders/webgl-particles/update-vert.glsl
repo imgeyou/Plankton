@@ -9,10 +9,8 @@ layout(location = 0) in vec2 aPos;
 layout(location = 1) in vec2 aVel;
 
 uniform float uTime;
-uniform vec2  uResolution;    // canvas size in pixels (for normalising flow vectors)
-uniform int   uNumTips;
-uniform vec2  uTips[10];      // fingertip UV positions (0-1, y=0 top, x-mirrored)
-uniform vec2  uFlows[10];     // fingertip velocity in screen pixels/frame
+uniform vec2  uTip;           // fingertip UV position (0-1); (-1,-1) = no hand
+uniform vec2  uFlow;          // fingertip velocity in screen pixels/frame
 uniform int   uFoxGesture;    // 1 = attract mode,  0 = repel mode
 uniform int   uHandMoving;    // 1 = hand moving fast (enlarges influence radius)
 uniform int   uVolumeSpike;   // 1 = mic spike (brief radial burst)
@@ -67,20 +65,17 @@ void main() {
   float radius  = uHandMoving == 1 ? 0.22 : 0.14;
   float foxSign = uFoxGesture == 1 ? -1.0 : 1.0; // negative = attract
 
-  for (int i = 0; i < uNumTips; i++) {
-    vec2  diff = pos - uTips[i];
-    float dist = length(diff);
+  vec2  diff = pos - uTip;
+  float dist = length(diff);
+  if (dist < radius && dist > 0.001) {
+    float falloff = 1.0 - dist / radius;
 
-    if (dist < radius && dist > 0.001) {
-      float falloff  = 1.0 - dist / radius;
-      float strength = falloff * falloff * 0.013;
- 
-      // Radial push / pull
-      vel += foxSign * normalize(diff) * strength;
- 
-      // Swirl: inject hand velocity (pixel → UV space)
-      vel += (uFlows[i] / uResolution) * 0.014 * falloff;
-    }
+    // Gentle radial part — just opens a path, doesn't dominate
+    vel += foxSign * normalize(diff) * (falloff * falloff * 0.004);
+
+    // Current — particles stream in the direction the hand moves
+    // uFlow is already in UV/frame (normalised in detection.js), no extra divide needed
+    vel += uFlow * 0.5 * falloff;
   }
 
   // 4. Volume spike: radial burst outward from screen centre

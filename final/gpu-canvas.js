@@ -2,14 +2,11 @@
 //render: subtle particle flows (resembling water flow in the foreground)
 
 (function () {
-  // ----- Dark background-> later will be blended with CPU canvas
-  document.documentElement.style.background = "#000";
-
   // ------- Canvas
   const canvas = document.getElementById("webgl-canvas");
 
   const gl = canvas.getContext("webgl2", {
-    alpha: false,
+    alpha: true,
     premultipliedAlpha: false,
     preserveDrawingBuffer: true,
     antialias: false,
@@ -161,15 +158,13 @@
   const fadeU = locs(fadeProg, ["uFade"]);
   const updU = locs(updateProg, [
     "uTime",
-    "uResolution",
-    "uNumTips",
-    "uTips",
-    "uFlows",
+    "uTip",
+    "uFlow",
     "uFoxGesture",
     "uHandMoving",
     "uVolumeSpike",
   ]);
-  const renU = locs(renderProg, ["uNumTips", "uTips", "uFoxGesture"]);
+  const renU = locs(renderProg, ["uTip", "uFoxGesture"]);
 
   // ---- Initial clear 
   gl.clearColor(0.01, 0.01, 0.02, 1.0);
@@ -183,17 +178,9 @@
     time += 0.016;
 
     // ----- Gather states from detection.js 
-    let W = canvas.width;
-    let H = canvas.height;
-    let numTips = 0;
-    let fingerTip = [0, 0];
-    let flowVec = [0, 0];
-    
-    if (typeof flowVectorWH !== "undefined" && flowVectorWH) {
-      numTips = 1;
-      fingerTip = [flowVectorWH.x_WH, flowVectorWH.y_WH];
-      flowVec = [flowVectorWH.vx_WH, flowVectorWH.vy_WH];
-    }
+    const hasHand = typeof flowVectorWH !== "undefined" && flowVectorWH;
+    const fingerTip = hasHand ? [flowVectorWH.x_WH, flowVectorWH.y_WH] : [-1, -1];
+    const flowVec   = hasHand ? [flowVectorWH.vx_WH, flowVectorWH.vy_WH] : [0, 0];
     
     const fox = typeof foxGesture !== "undefined" && foxGesture ? 1 : 0;
     const moving = typeof handMoving !== "undefined" && handMoving ? 1 : 0;
@@ -214,10 +201,8 @@
     gl.disable(gl.BLEND);
     gl.useProgram(updateProg);
     gl.uniform1f(updU.uTime, time);
-    gl.uniform2f(updU.uResolution, W, H);
-    gl.uniform1i(updU.uNumTips, numTips);
-    gl.uniform2fv(updU.uTips, fingerTip);
-    gl.uniform2fv(updU.uFlows, flowVec);
+    gl.uniform2fv(updU.uTip, fingerTip);
+    gl.uniform2fv(updU.uFlow, flowVec);
     gl.uniform1i(updU.uFoxGesture, fox);
     gl.uniform1i(updU.uHandMoving, moving);
     gl.uniform1i(updU.uVolumeSpike, spike);
@@ -237,8 +222,7 @@
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
     gl.useProgram(renderProg);
-    gl.uniform1i(renU.uNumTips, numTips);
-    gl.uniform2fv(renU.uTips, fingerTip);
+    gl.uniform2fv(renU.uTip, fingerTip);
     gl.uniform1i(renU.uFoxGesture, fox);
 
     gl.bindVertexArray(drawVAO);

@@ -14,7 +14,7 @@ const maxParticleNum = 1600;
 const normalParticleNum = 900;
 const particleSpeed = 0.3;
 
-let disruptRadius = 140;
+let disruptRadius = 200;
 
 const resurfaceWaiting_Time = 300; // ~5s at 60fps before resurfacing starts
 const noMovementTime = 180; // ~3s of hand stillness required
@@ -422,13 +422,18 @@ class Particle {
     let dx = this.x - v.x;
     let dy = this.y - v.y;
     let dist = o.sqrt(dx * dx + dy * dy);
-      
-      if (dist < disruptRadius && dist > 0) {
-        let strength = o.pow(1 - dist / disruptRadius, 2) * 10 * this.reactivity;
-        this.vx += (dx / dist) * strength;
-        this.vy += (dy / dist) * strength;
-      }
+
+    if (dist < disruptRadius && dist > 0) {
+      let falloff = 1 - dist / disruptRadius;
+      // Radial push — particles part around the hand
+      let strength = o.pow(falloff, 2) * 22 * this.reactivity;
+      this.vx += (dx / dist) * strength;
+      this.vy += (dy / dist) * strength;
+      // Drag — particles get swept in the direction of hand movement
+      this.vx += v.vx * 0.18 * falloff * this.reactivity;
+      this.vy += v.vy * 0.18 * falloff * this.reactivity;
     }
+  }
 
   draw(waveTime, W, H) {
     if (this.dead) return;
