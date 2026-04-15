@@ -1,23 +1,22 @@
 // https://github.com/JoTrdl/starfluid/blob/master/src/shaders/motion.html | Copyright (c) 2015 Johann Troendle
+// modified: single averaged-tip injection, dye removed, wider radius
 
-//motion texture: Gaussian hand position
 precision highp float;
 varying vec2 vUv;
 uniform sampler2D tSampler;
 uniform float ratio;
-uniform vec2 point;
-uniform float dye;
-uniform vec2 velocity;
-const float VELOCITY_RADIUS = 500.0;
-const float DYE_RADIUS = 2000.0;
+uniform vec2  uPoint;    // averaged fingertip UV position (0-1)
+uniform vec2  uVelocity; // averaged velocity, normalised to screen size
+
+const float VELOCITY_RADIUS = 300.0; // lower = wider Gaussian spread
+const float STRENGTH = 150.0;
 
 void main() {
   gl_FragColor = texture2D(tSampler, vUv);
-  vec2 pos = vUv * vec2(ratio, 1.0);
-  vec2 rPoint = point * vec2(ratio, 1.0);
+
+  vec2 pos     = vUv    * vec2(ratio, 1.0);
+  vec2 rPoint  = uPoint * vec2(ratio, 1.0);
   float gaussian = -dot(pos - rPoint, pos - rPoint);
-  // Velocity
-  gl_FragColor.xy = velocity * exp(gaussian * VELOCITY_RADIUS) * 100.0;
-  // dye
-  gl_FragColor.z = dye * exp(gaussian * DYE_RADIUS);
+
+  gl_FragColor.xy = uVelocity * exp(gaussian * VELOCITY_RADIUS) * STRENGTH;
 }

@@ -43,25 +43,15 @@
   resize();
   window.addEventListener("resize", resize);
 
-  // ----- Load shaders from DOM (injected by shaders/load-shaders.js) 
-  // shaders for this all have prefix: wp-
-  function glsl(id) {
-    const el = document.getElementById(id);
-    if (!el) {
-      console.error("[webgl-particles] Shader not found in DOM:", id);
-      return "";
-    }
-    return el.textContent;
-  }
+  // ----- Load shaders from DOM (injected by shaders/load-shaders.js)
+  const FADE_VS   = document.getElementById("wp-fade-vert").textContent;
+  const FADE_FS   = document.getElementById("wp-fade-frag").textContent;
+  const DUMMY_FS  = document.getElementById("wp-dummy-frag").textContent;
+  const UPDATE_VS = document.getElementById("wp-update-vert").textContent;
+  const RENDER_VS = document.getElementById("wp-render-vert").textContent;
+  const RENDER_FS = document.getElementById("wp-render-frag").textContent;
 
-  const FADE_VS = glsl("wp-fade-vert");
-  const FADE_FS = glsl("wp-fade-frag");
-  const DUMMY_FS = glsl("wp-dummy-frag");
-  const UPDATE_VS = glsl("wp-update-vert");
-  const RENDER_VS = glsl("wp-render-vert");
-  const RENDER_FS = glsl("wp-render-frag");
-
-  // ─── Compile helpers 
+  // ----- Compile helpers 
   function compileShader(type, src) {
     const shader = gl.createShader(type);
     gl.shaderSource(shader, src);

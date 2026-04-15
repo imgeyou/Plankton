@@ -217,52 +217,51 @@ function sampleFluidVelocity(x, y, W, H) {
   return { vx: vx * particleSpeed, vy: -vy * particleSpeed };
 }
 
-// ----- [draw] glowing lines between nearby particles
-// 4 opacity tiers, each batched into a single ctx.stroke() call.
-const _connGrid = new Map();
-const _segs = [
-  new Float32Array(24000), // tier 0
+// ----- draw lines between nearby particles: 3 opacity tiers
+const connGrid = new Map();
+const connSegs = [
+  new Float32Array(24000), // tier 0 - farthest
   new Float32Array(24000), // tier 1
   new Float32Array(24000), // tier 2 — closest, most visible
 ];
-const _segN = [0, 0, 0];
+const connSegNum = [0, 0, 0];
 // opacity and lineWidth per tier — subtle falloff so lines support particles, not compete
-const TIER_ALPHA = ["0.05", "0.08", "0.13"];
-const TIER_WIDTH = [0.5, 0.7, 0.9];
+const tierAlpha = ["0.05", "0.08", "0.13"];
+const tierWidth = [0.5, 0.7, 0.9];
 
 
 function _drawConnections(p, particles) {
-  const MAX_DIST = 60;
-  const MAX_DIST2 = MAX_DIST * MAX_DIST;
-  const CS = MAX_DIST;
+  const maxDist = 60;
+  const maxDist2 = maxDist * maxDist;
+  const connCellSize = maxDist;
 
   // Build spatial grid
-  _connGrid.clear();
+  connGrid.clear();
   for (let i = 0; i < particles.length; i++) {
     const a = particles[i];
     if (a.dead || a.alpha < 15) continue;
-    const cx = Math.floor(a.x / CS) + 2;
-    const cy = Math.floor(a.y / CS) + 2;
+    const cx = Math.floor(a.x / connCellSize) + 2;
+    const cy = Math.floor(a.y / connCellSize) + 2;
     const key = cy * 600 + cx;
-    let cell = _connGrid.get(key);
+    let cell = connGrid.get(key);
     if (!cell) {
       cell = [];
-      _connGrid.set(key, cell);
+      connGrid.set(key, cell);
     }
     cell.push(i);
   }
 
-  _segN[0] = _segN[1] = _segN[2] = 0;
+  connSegNum[0] = connSegNum[1] = connSegNum[2] = 0;
   const NDX = [0, 1, -1, 0, 1];
   const NDY = [0, 0, 1, 1, 1];
 
-  for (const [key, cell] of _connGrid) {
+  for (const [key, cell] of connGrid) {
     const cy = Math.floor(key / 600);
     const cx = key - cy * 600;
 
     for (let ni = 0; ni < 5; ni++) {
       const nkey = (cy + NDY[ni]) * 600 + (cx + NDX[ni]);
-      const nbr = ni === 0 ? cell : _connGrid.get(nkey);
+      const nbr = ni === 0 ? cell : connGrid.get(nkey);
       if (!nbr) continue;
 
       for (let ii = 0; ii < cell.length; ii++) {
@@ -273,18 +272,18 @@ function _drawConnections(p, particles) {
           const dx = a.x - b.x;
           const dy = a.y - b.y;
           const d2 = dx * dx + dy * dy;
-          if (d2 > MAX_DIST2) continue;
+          if (d2 > maxDist2) continue;
 
-          const t = 1 - Math.sqrt(d2) / MAX_DIST; // 0=far, 1=close
+          const t = 1 - Math.sqrt(d2) / maxDist; // 0=far, 1=close
           const tier = Math.min(2, Math.floor(t * 3)); // 0–2
-          const buf = _segs[tier];
-          let n = _segN[tier];
+          const buf = connSegs[tier];
+          let n = connSegNum[tier];
           if (n + 4 <= buf.length) {
             buf[n] = a.x;
             buf[n + 1] = a.y;
             buf[n + 2] = b.x;
             buf[n + 3] = b.y;
-            _segN[tier] = n + 4;
+            connSegNum[tier] = n + 4;
           }
         }
       }
@@ -296,12 +295,12 @@ function _drawConnections(p, particles) {
   const ctx = p.drawingContext;
   ctx.save();
   for (let tier = 0; tier < 3; tier++) {
-    const n = _segN[tier];
+    const n = connSegNum[tier];
     if (n === 0) continue;
-    ctx.lineWidth = TIER_WIDTH[tier];
-    ctx.strokeStyle = `rgba(140, 220, 225, ${TIER_ALPHA[tier]})`;
+    ctx.lineWidth = tierWidth[tier];
+    ctx.strokeStyle = `rgba(140, 220, 225, ${tierAlpha[tier]})`;
     ctx.beginPath();
-    const buf = _segs[tier];
+    const buf = connSegs[tier];
     for (let i = 0; i < n; i += 4) {
       ctx.moveTo(buf[i], buf[i + 1]);
       ctx.lineTo(buf[i + 2], buf[i + 3]);

@@ -12,10 +12,9 @@
       var gl = ctx.gl;
 
       this.uniforms = {
-        point: { type: "2f", value: [0, 0] },
-        dye: { type: "1f", value: 0.0 },
-        velocity: { type: "2f", value: [0, 0] },
-        ratio: { type: "1f", value: ctx.aspect },
+        uPoint:    { type: "2f", value: [0, 0] },
+        uVelocity: { type: "2f", value: [0, 0] },
+        ratio:     { type: "1f", value: ctx.aspect },
       };
 
       this.motion = new RTT(gl, {
@@ -30,18 +29,28 @@
         .render();
     },
 
-    // Called externally by cpu-canvas.js for hand-tracking injection
-    injectPoint: function (nx, ny, du, dv) {
-      this.uniforms.point.value = [nx, ny];
-      this.uniforms.velocity.value = [du, dv];
-      this.uniforms.dye.value = 1.0;
-    },
-
     update: function (ctx) {
       this.ctx = ctx;
+
+      // Average all available fingertip positions and velocities
+      var tips  = typeof fingertips  !== 'undefined' ? fingertips  : [];
+      var flows = typeof flowVectors !== 'undefined' ? flowVectors : [];
+      var n = tips.length;
+
+      if (n > 0) {
+        var ax = 0, ay = 0, avx = 0, avy = 0;
+        for (var i = 0; i < n; i++) {
+          ax  += tips[i].x;
+          ay  += tips[i].y;
+          if (flows[i]) { avx += flows[i].vx; avy += flows[i].vy; }
+        }
+        this.uniforms.uPoint.value    = [ax / n / ctx.width,  ay / n / ctx.height];
+        this.uniforms.uVelocity.value = [avx / n / ctx.width, avy / n / ctx.height];
+      } else {
+        this.uniforms.uVelocity.value = [0, 0];
+      }
+
       this.motion.render();
-      this.uniforms.velocity.value = [0, 0];
-      this.uniforms.dye.value = 0;
     },
 
     resize: function (ctx) {
