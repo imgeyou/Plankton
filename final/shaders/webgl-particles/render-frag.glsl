@@ -13,7 +13,7 @@ void main() {
   if (d > 0.5) discard;
 
   float a = 1.0 - d * 2.0;
-  a       = a * a;  // sharpen falloff
+  a  = a * a;  // sharpen falloff
 
   // Teal normally, golden during fox gesture (index + pinky up)
   vec3 teal   = vec3(0.28, 0.82, 0.92);

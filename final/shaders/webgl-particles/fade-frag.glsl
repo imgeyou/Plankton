@@ -2,7 +2,7 @@
 // WebGL2 for gpu-canvas.js
 
 //fading effect: 
-// Paired with blendFunc(ZERO, ONE_MINUS_SRC_ALPHA):
+// used together with blendFunc(ZERO, ONE_MINUS_SRC_ALPHA):
 // result = destination * (1 - srcAlpha) = destination * pFade
 
 

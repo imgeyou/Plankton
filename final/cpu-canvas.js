@@ -7,7 +7,6 @@ let particles = [];
 let boomActive = false; // particles are currently flying out
 let postBoomMode = false; // waiting for stillness before resurfacing
 let postBoomFrame = -99999;
-let lastMovementFrame = -99999;
 
 //---- parameters
 const maxParticleNum = 1600;
@@ -17,7 +16,6 @@ const particleSpeed = 0.3;
 let disruptRadius = 200;
 
 const resurfaceWaiting_Time = 300; // ~5s at 60fps before resurfacing starts
-const noMovementTime = 180; // ~3s of hand stillness required
 const trickleSpeed = 0.8;
 
 const P_INIT     = 0; // startup population — placed randomly, already visible
@@ -57,8 +55,6 @@ let effect = function (p) {
     p.noStroke();
     p.fill(0, 0, 3, 22); // fade -> Trail effect
     p.rect(0, 0, p.width, p.height);
-
-    if (handMoving) lastMovementFrame = p.frameCount;
 
     // --- 1. Index-only gesture
       // eject new particles from fingertip
@@ -121,8 +117,7 @@ let effect = function (p) {
         canTrickle = false;
       } else if (postBoomMode) {
         let sinceBoom = p.frameCount - postBoomFrame;
-        let sinceMove = p.frameCount - lastMovementFrame;
-        canTrickle = sinceBoom > resurfaceWaiting_Time && sinceMove > noMovementTime;
+        canTrickle = sinceBoom > resurfaceWaiting_Time;
         // Exit post-boom mode once particle pool is back to normal again
         if (canTrickle && particles.length >= normalParticleNum)
           postBoomMode = false;

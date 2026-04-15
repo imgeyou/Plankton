@@ -1,7 +1,7 @@
 // this is for gesture and audio detection
 
 // Exports:
-// 1. normTips, fingertips, flowVectors — fingertip positions and velocities
+// 1. flowVector, flowVectorWH, indexTipWH — fingertip positions and velocities
 // 2. handMoving   — true if any fingertip moved faster than M_sensitivity px/frame
 // 3. foxGesture   — true if the fox hand shape is held (latched for FoxGesture_Latch)
 // 4.volumeSpike  — true if mic volume spiked above the rolling average
@@ -15,8 +15,9 @@ const H = window.innerHeight
 
 let normTips = []; // MediaPipe 0–1 normalised coords  [{x,y}, …]
 let fingertips = []; // canvas-pixel coords, selfie-mirrored [{x,y}, …]
-let flowVector = { x: 0, y: 0, vx: 0, vy: 0, v: 0 };
-let flowVectorWH = { x: 0, y: 0, vx: 0, vy: 0, v: 0 };
+let flowVector = { x: 0, y: 0, vx: 0, vy: 0, v: 0 }; // average fingertip in pixel
+let flowVectorWH = { x: 0, y: 0, vx: 0, vy: 0, v: 0 }; // average fingertip in uv
+let indexTipWH = null; // index fingertip
 
 let handMoving = false;
 let foxGesture = false;
@@ -105,6 +106,7 @@ function updateHandDetection() {
   //clean old data
   normTips = [];
   fingertips = [];
+  indexTipWH = null;
 
   if (detections?.multiHandLandmarks) {
     for (const hand of detections.multiHandLandmarks) {
@@ -147,7 +149,14 @@ function updateHandDetection() {
     const y_WH = y / H;
     const vx_WH = vx / W;
     const vy_WH = vy / H;
-    flowVectorWH = {x_WH, y_WH, vx_WH, vy_WH, v: Math.sqrt(vx_WH * vx_WH + vy_WH * vy_WH) }
+    flowVectorWH = { x_WH, y_WH, vx_WH, vy_WH, v: Math.sqrt(vx_WH * vx_WH + vy_WH * vy_WH) };
+
+    // Index fingertip (landmark 8 = fingertips[0])
+    const old0 = _oldFingertips[0];
+    const ix = fingertips[0].x, iy = fingertips[0].y;
+    const ivx = old0 ? ix - old0.x : 0;
+    const ivy = old0 ? iy - old0.y : 0;
+    indexTipWH = { x_WH: ix / W, y_WH: iy / H, vx_WH: ivx / W, vy_WH: ivy / H };
   } else {
     return;
   }
