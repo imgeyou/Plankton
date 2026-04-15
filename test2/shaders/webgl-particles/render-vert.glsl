@@ -17,12 +17,12 @@ void main() {
   gl_Position = vec4(clip, 0.0, 1.0);
 
   // Brightness increases near fingertips
-  float bright = 0.55;
+float bright = 0.55;
   for (int i = 0; i < uNumTips; i++) {
     float d = length(aPos - uTips[i]);
-    bright += max(0.0, 1.0 - d / 0.14) * 2.2;
+    bright += max(0.0, 1.0 - d / 0.14) * 1.0;
   }
-  bright = clamp(bright, 0.3, 4.0);
+bright = clamp(bright, 0.3, 1.8);
 
   // Point size: 1.5 baseline, up to ~4.7 near fingertips
   gl_PointSize = 1.5 + min((bright - 0.3) * 0.9, 3.2);
@@ -30,3 +30,5 @@ void main() {
   vBright = bright;
   vFox    = float(uFoxGesture);
 }
+
+ 

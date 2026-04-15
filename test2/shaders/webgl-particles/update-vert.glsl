@@ -41,10 +41,11 @@ float vnoise(vec2 p) {
 // Divergence-free: no sinks or sources → particles stay spread evenly.
 vec2 curlNoise(vec2 p, float t) {
   const float E = 0.0015;
-  float n_py = vnoise((p + vec2(0.0,  E)) * 2.8 + t);
-  float n_my = vnoise((p - vec2(0.0,  E)) * 2.8 + t);
-  float n_px = vnoise((p + vec2(E,  0.0)) * 2.8 + t);
-  float n_mx = vnoise((p - vec2(E,  0.0)) * 2.8 + t);
+  const float curlFre = 1.5;
+  float n_py = vnoise((p + vec2(0.0,  E)) * curlFre + t);
+  float n_my = vnoise((p - vec2(0.0,  E)) * curlFre + t);
+  float n_px = vnoise((p + vec2(E,  0.0)) * curlFre + t);
+  float n_mx = vnoise((p - vec2(E,  0.0)) * curlFre + t);
   return vec2(
      (n_py - n_my) / (2.0 * E),   //  ∂f/∂y
     -(n_px - n_mx) / (2.0 * E)    // −∂f/∂x
@@ -56,7 +57,7 @@ void main() {
   vec2 vel = aVel;
 
   // 1. Curl-noise drift — divergence-free, keeps particles spread evenly
-  float t = uTime * 0.08;
+  float t = uTime * 0.08 + hash21(aPos) * 3.14;
   vel += curlNoise(pos, t) * 0.00055;
 
   // 2. Gentle upward float
@@ -71,14 +72,14 @@ void main() {
     float dist = length(diff);
 
     if (dist < radius && dist > 0.001) {
-      float t2       = 1.0 - dist / radius;
-      float strength = t2 * t2 * 0.013;
-
+      float falloff  = 1.0 - dist / radius;
+      float strength = falloff * falloff * 0.013;
+ 
       // Radial push / pull
       vel += foxSign * normalize(diff) * strength;
-
+ 
       // Swirl: inject hand velocity (pixel → UV space)
-      vel += (uFlows[i] / uResolution) * 0.014 * t2;
+      vel += (uFlows[i] / uResolution) * 0.014 * falloff;
     }
   }
 

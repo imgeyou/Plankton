@@ -221,19 +221,18 @@ function sampleFluidVelocity(x, y, W, H) {
 // 4 opacity tiers, each batched into a single ctx.stroke() call.
 const _connGrid = new Map();
 const _segs = [
-  new Float32Array(24000), // tier 0 — farthest, barely visible
+  new Float32Array(24000), // tier 0
   new Float32Array(24000), // tier 1
-  new Float32Array(24000), // tier 2
-  new Float32Array(24000), // tier 3 — closest, most visible
+  new Float32Array(24000), // tier 2 — closest, most visible
 ];
-const _segN = [0, 0, 0, 0];
+const _segN = [0, 0, 0];
 // opacity and lineWidth per tier — subtle falloff so lines support particles, not compete
-const TIER_ALPHA = ["0.025", "0.05", "0.08", "0.13"];
-const TIER_WIDTH = [0.4, 0.5, 0.7, 0.9];
+const TIER_ALPHA = ["0.05", "0.08", "0.13"];
+const TIER_WIDTH = [0.5, 0.7, 0.9];
 
 
 function _drawConnections(p, particles) {
-  const MAX_DIST = 80;
+  const MAX_DIST = 60;
   const MAX_DIST2 = MAX_DIST * MAX_DIST;
   const CS = MAX_DIST;
 
@@ -253,7 +252,7 @@ function _drawConnections(p, particles) {
     cell.push(i);
   }
 
-  _segN[0] = _segN[1] = _segN[2] = _segN[3] = 0;
+  _segN[0] = _segN[1] = _segN[2] = 0;
   const NDX = [0, 1, -1, 0, 1];
   const NDY = [0, 0, 1, 1, 1];
 
@@ -277,7 +276,7 @@ function _drawConnections(p, particles) {
           if (d2 > MAX_DIST2) continue;
 
           const t = 1 - Math.sqrt(d2) / MAX_DIST; // 0=far, 1=close
-          const tier = Math.min(3, Math.floor(t * 4)); // 0–3
+          const tier = Math.min(2, Math.floor(t * 3)); // 0–2
           const buf = _segs[tier];
           let n = _segN[tier];
           if (n + 4 <= buf.length) {
@@ -289,12 +288,14 @@ function _drawConnections(p, particles) {
           }
         }
       }
+
+      
     }
   }
 
   const ctx = p.drawingContext;
   ctx.save();
-  for (let tier = 0; tier < 4; tier++) {
+  for (let tier = 0; tier < 3; tier++) {
     const n = _segN[tier];
     if (n === 0) continue;
     ctx.lineWidth = TIER_WIDTH[tier];
@@ -315,7 +316,8 @@ class Particle {
     this.o = o;
     this.type = type;
     const L = particleLayers[layer ?? 1];
-    this.noiseOffset = o.random(1000);
+    this.noiseOffset = o.random(1000); // still used for size pulse
+    this.driftAngle = o.random(o.TWO_PI);
 
     this.depth = o.random(L.depthMin, L.depthMax);
     this.size = o.random(2, 10) * this.depth;
@@ -382,9 +384,9 @@ class Particle {
     else fadeRate = 4;
     if (this.alpha < 100) this.alpha = Math.min(100, this.alpha + fadeRate);
 
-    // perlin noise for a richer drifting behavious
-    let t = o.frameCount * 0.005;
-    let angle = o.noise(this.x * 0.003, this.y * 0.003, t + this.noiseOffset) * o.TWO_PI * 2;
+    // random walk drift — cheap alternative to Perlin noise
+    this.driftAngle += o.random(-0.04, 0.04);
+    let angle = this.driftAngle;
 
     let driftSpeed = 1.8 * this.depth;
     let targetVx = o.cos(angle) * driftSpeed;
@@ -450,20 +452,20 @@ class Particle {
 
     o.noStroke();
 
-    // Layer 1 — soft outer glow
+    // Layer 1 — outer glow
     o.fill(hue, sat * 0.45, bri, (3 + this.depth * 5) * a);
     o.circle(this.x, this.y, pulse * 4.5);
 
-    // Layer 2 — inner glow + core
+    // Layer 2 — inner glow
     o.fill(hue, sat * 0.8, bri, (12 + this.depth * 18) * a);
     o.circle(this.x, this.y, pulse * 1.8);
 
-    // Layer 3 — white-hot centre at wave crests
-    if (waveNorm > 0.5) {
-      const coreFrac = (waveNorm - 0.5) / 0.5;
-      o.fill(hue, sat * 0.1, 100, coreFrac * 88 * a);
-      o.circle(this.x, this.y, pulse * 0.4);
-    }
+    // Layer 3 — white core
+    // if (waveNorm > 0.5) {
+    //   const coreFrac = (waveNorm - 0.5) / 0.5;
+    //   o.fill(hue, sat * 0.1, 100, coreFrac * 88 * a);
+    //   o.circle(this.x, this.y, pulse * 0.4);
+    // }
   }
 }
 

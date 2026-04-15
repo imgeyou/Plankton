@@ -1,6 +1,5 @@
 // webgl-particles.js
-// WebGL2 particle system driven by hand gesture data from detection.js
-//
+
 // Reads each frame (globals set by detection.js):
 //   fingertips   — [{x,y}] screen-pixel positions, x-mirrored to match canvas
 //   flowVectors  — [{x,y,vx,vy}] per-fingertip velocity in screen pixels/frame
@@ -14,7 +13,7 @@
 //   A fade quad dims the previous frame to create glowing trails.
 
 (function () {
-  // ----- Dark background (needed since cpu-canvas is disabled)
+  // ----- Dark background
   document.documentElement.style.background = "#000";
   document.body.style.background = "#000";
 
@@ -22,12 +21,14 @@
   const canvas = document.getElementById("webgl-canvas");
 
   const gl = canvas.getContext("webgl2", {
-    alpha: false, // opaque — we own the background
+    alpha: false,
     premultipliedAlpha: false,
     preserveDrawingBuffer: true, // keep frame content for trail fade
     antialias: false,
   });
 
+
+  // ------ webgl suppport check
   if (!gl) {
     console.warn("[webgl-particles] WebGL2 not supported — disabled.");
     canvas.remove();
@@ -42,8 +43,8 @@
   resize();
   window.addEventListener("resize", resize);
 
-  // ─── Load shaders from DOM (injected by shaders/load-shaders.js) ────────────
-  // Files live in shaders/webgl-particles/ and are registered with IDs wp-*.
+  // ----- Load shaders from DOM (injected by shaders/load-shaders.js) 
+  // shaders for this all have prefix: wp-
   function glsl(id) {
     const el = document.getElementById(id);
     if (!el) {
@@ -237,14 +238,14 @@
     const writeTF = tfs[idx];
     const drawVAO = vaos[1 - idx]; // render from the just-written buffer
 
-    // ── 1. Fade pass — darken previous frame for trail effect ─────────────────
+    // ------ 1. Fade pass — darken previous frame for trail effect 
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ZERO, gl.ONE_MINUS_SRC_ALPHA); // result = dst * (1 - srcAlpha)
     gl.useProgram(fadeProg);
-    gl.uniform1f(fadeU.uFade, 0.89); // retain 89% brightness per frame
+    gl.uniform1f(fadeU.uFade, 0.82); // retain 89% brightness per frame
     gl.drawArrays(gl.TRIANGLES, 0, 3); // fullscreen triangle, no VAO needed
 
-    // ── 2. Update pass — Transform Feedback physics (no rasterisation) ────────
+    // ------ 2. Update pass 
     gl.disable(gl.BLEND);
     gl.useProgram(updateProg);
     gl.uniform1f(updU.uTime, time);
