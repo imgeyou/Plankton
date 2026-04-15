@@ -26,12 +26,12 @@ void main() {
 
   // 1. sine-wave drift
   vel += vec2(
-    sin(pos.y * 3.1 + uTime * 0.7),
-    cos(pos.x * 2.8 + uTime * 0.5)
-  ) * 0.00055;
+    sin(pos.y * 3.1 + uTime * 0.25),
+    cos(pos.x * 2.8 + uTime * 0.18)
+  ) * 0.00022;
 
   // 2. slowly float upward
-  vel.y -= 0.000065;
+  vel.y -= 0.000025;
 
   // 3. hand influence
   if (uHasHand == 1) {
