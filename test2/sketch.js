@@ -10,6 +10,7 @@ let sketch = function (p) {
     pip.id("sketch-view");
 
     p.colorMode(p.HSB);
+    p.noLoop(); // driven by effectWindow.redraw() each frame
   };
 
   p.draw = function () {

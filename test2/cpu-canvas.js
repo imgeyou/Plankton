@@ -7,8 +7,8 @@ let postBoomFrame = -99999;
 let lastMovementFrame = -99999;
 
 //---- parameters
-const maxParticleNum = 1600;
-const normalParticleNum = 900;
+const maxParticleNum = 1000;
+const normalParticleNum = 800;
 const particleSpeed = 0.3;
 
 let disruptRadius = 140;
@@ -24,9 +24,9 @@ const P_POPULATE = 2; // ejected from fingertip — golden burst
 // several layers of particles: simulate different depth
 // size, speed, reactivity all scale from depth directly in the constructor
 const particleLayers = [
-  { count: 800, depthMin: 0.15, depthMax: 0.35 },
-  { count: 500, depthMin: 0.38, depthMax: 0.62 },
-  { count: 300, depthMin: 0.65, depthMax: 1.0  },
+  { count: 600, depthMin: 0.15, depthMax: 0.35 },
+  { count: 300, depthMin: 0.38, depthMax: 0.62 },
+  { count: 100, depthMin: 0.65, depthMax: 1.0 },
 ];
 const TARGET_TOTAL = particleLayers.reduce((s, l) => s + l.count, 0);
 
@@ -51,6 +51,8 @@ let effect = function (p) {
   };
 
   p.draw = function () {
+    updateHandDetection(p.width, p.height);
+
     p.noStroke();
     p.fill(0, 0, 3, 22); // fade -> Trail effect
     p.rect(0, 0, p.width, p.height);
@@ -58,96 +60,100 @@ let effect = function (p) {
     if (handMoving) lastMovementFrame = p.frameCount;
 
     // --- 1. Index-only gesture
-      // eject new particles from fingertip
-      if (!boomActive && !postBoomMode) {
-        if (indexOnly && normTips.length > 0) {
-          // index as emitter — normTips[0] is landmark 8 (index fingertip), mirrored to match canvas
-          const tip = { x: (1 - normTips[0].x) * p.width, y: normTips[0].y * p.height };
+    // eject new particles from fingertip
+    if (!boomActive && !postBoomMode) {
+      if (indexOnly && normTips.length > 0) {
+        // index as emitter — normTips[0] is landmark 8 (index fingertip), mirrored to match canvas
+        const tip = {
+          x: (1 - normTips[0].x) * p.width,
+          y: normTips[0].y * p.height,
+        };
 
-          if (p.frameCount % 2 === 0) {
-            if (particles.length >= maxParticleNum) particles.shift();
-            let angle = p.random(p.TWO_PI);
-            let speed = p.random(1.5, 4);
-            let wobble = p.random(-1, 1);
-            particles.push(
-              new Particle(
-                p,
-                P_POPULATE,
-                {
-                  x: tip.x + p.random(-8, 8),
-                  y: tip.y + p.random(-8, 8),
-                  vx: Math.cos(angle) * speed + Math.sin(angle) * wobble,
-                  vy: Math.sin(angle) * speed - Math.cos(angle) * wobble - 0.5,
-                },
-                Math.floor(p.random(particleLayers.length)),
-              ),
-            );
-          }
+        if (p.frameCount % 2 === 0) {
+          if (particles.length >= maxParticleNum) particles.shift();
+          let angle = p.random(p.TWO_PI);
+          let speed = p.random(1.5, 4);
+          let wobble = p.random(-1, 1);
+          particles.push(
+            new Particle(
+              p,
+              P_POPULATE,
+              {
+                x: tip.x + p.random(-8, 8),
+                y: tip.y + p.random(-8, 8),
+                vx: Math.cos(angle) * speed + Math.sin(angle) * wobble,
+                vy: Math.sin(angle) * speed - Math.cos(angle) * wobble - 0.5,
+              },
+              Math.floor(p.random(particleLayers.length)),
+            ),
+          );
         }
       }
+    }
 
     // ----- 2. Boom Effect
-      // triggered by fox gesture + sudden increase in volume
-      if (foxGesture && volumeSpike && !boomActive && !postBoomMode) {
-        // console.log("boom - fox=true spike=true");
-        boomActive = true;
-        // blown away
-        for (let pt of particles) {
-          const angle = -p.HALF_PI + p.random(-0.4, 0.4); // mostly upward, small spread
-          const speed = p.random(22, 42) * (0.4 + pt.depth);
-          pt.vx = Math.cos(angle) * speed;
-          pt.vy = Math.sin(angle) * speed;
-          pt.boomed = true;
-        }
+    // triggered by fox gesture + sudden increase in volume
+    if (foxGesture && volumeSpike && !boomActive && !postBoomMode) {
+      // console.log("boom - fox=true spike=true");
+      boomActive = true;
+      // blown away
+      for (let pt of particles) {
+        const angle = -p.HALF_PI + p.random(-0.4, 0.4); // mostly upward, small spread
+        const speed = p.random(22, 42) * (0.4 + pt.depth);
+        pt.vx = Math.cos(angle) * speed;
+        pt.vy = Math.sin(angle) * speed;
+        pt.boomed = true;
       }
-      // Remove dead boomed particles; detect when all are gone
-      if (boomActive) {
-        particles = particles.filter((pt) => !pt.dead);
-        if (particles.length === 0) {
-          boomActive = false;
-          postBoomMode = true;
-          postBoomFrame = p.frameCount;
-        }
-      }
+    }
+    // detect when all boomed particles are gone (filter happens below)
+    if (boomActive && particles.every((pt) => pt.dead)) {
+      boomActive = false;
+      postBoomMode = true;
+      postBoomFrame = p.frameCount;
+    }
 
     // ---- 3. Particle resurface, filling blank areas left by hand sweeps)
-      // Post-boom:  only trickle after wait period AND hand has been still
-      const trickleSpeed = 1;
-      let canTrickle;
-      if (boomActive) {
-        canTrickle = false;
-      } else if (postBoomMode) {
-        let sinceBoom = p.frameCount - postBoomFrame;
-        let sinceMove = p.frameCount - lastMovementFrame;
-        canTrickle = sinceBoom > resurfaceWaiting_Time && sinceMove > noMovementTime;
-        // Exit post-boom mode once particle pool is back to normal again
-        if (canTrickle && particles.length >= normalParticleNum)
-          postBoomMode = false;
-      } else {
-        canTrickle = true;
-      }
-      //add particles back to the scene
-      if (canTrickle) {
-        for (let li = 0; li < particleLayers.length; li++) {
-          for (let i = 0; i < trickleSpeed; i++) {
-            if (particles.length >= maxParticleNum) particles.shift();
-            particles.push(new Particle(p, P_REFILL, null, li));
-          }
+    // Post-boom:  only trickle after wait period AND hand has been still
+    let canTrickle;
+    if (boomActive) {
+      canTrickle = false;
+    } else if (postBoomMode) {
+      let sinceBoom = p.frameCount - postBoomFrame;
+      let sinceMove = p.frameCount - lastMovementFrame;
+      canTrickle =
+        sinceBoom > resurfaceWaiting_Time && sinceMove > noMovementTime;
+      // Exit post-boom mode once particle pool is back to normal again
+      if (canTrickle && particles.length >= normalParticleNum)
+        postBoomMode = false;
+    } else {
+      canTrickle = true;
+    }
+    //add particles back to the scene
+    if (canTrickle) {
+      for (let li = 0; li < particleLayers.length; li++) {
+        for (let i = 0; i < trickleSpeed; i++) {
+          if (particles.length >= maxParticleNum) particles.shift();
+          particles.push(new Particle(p, P_REFILL, null, li));
         }
       }
+    }
 
-    // Draw far -> near so near particles appear on top
+    // Draw Particles
     const waveTime = p.frameCount * 0.016; // wave animation time
     for (let pt of particles) {
       pt.update(p.width, p.height);
       pt._applyRepulsion(flowVectors);
     }
+    //filter out dead particles
     particles = particles.filter((pt) => !pt.dead);
-    _drawConnections(p, particles);
+    if (p.frameCount % 2 === 0) _drawConnections(p, particles);
+
     for (let pt of particles) {
       pt.draw(waveTime, p.width, p.height);
     }
-  };;
+
+    sketchWindow.redraw(); // drive PiP from this loop, not its own RAF
+  };
 };
 
 // ------ Helper functions
@@ -155,7 +161,7 @@ let effect = function (p) {
 // Four interfering sine waves traveling in different directions.
 // Returns a value in [-1, 1] at screen position (x, y) at time t.
 // Particles use this to modulate their color, brightness, and size.
-function sampleWave(x, y, t, W, H) {
+function _sampleWave(x, y, t, W, H) {
   const nx = x / W,
     ny = y / H;
   // Primary diagonal sweep — dominant shine wave
@@ -164,7 +170,7 @@ function sampleWave(x, y, t, W, H) {
 }
 
 // Sample velocity from the WebGL fluid solver (shared via window.webglFluidVelocity)
-function sampleFluidVelocity(x, y, W, H) {
+function _sampleFluidVelocity(x, y, W, H) {
   //read velocity texture from webGL: window.webglFluidVelocity
   const velocityField = window.webglFluidVelocity;
 
@@ -219,51 +225,49 @@ function sampleFluidVelocity(x, y, W, H) {
 
 // ----- [draw] glowing lines between nearby particles
 // 4 opacity tiers, each batched into a single ctx.stroke() call.
-const _connGrid = new Map();
+const connGrid = new Map();
 const _segs = [
-  new Float32Array(24000), // tier 0 — farthest, barely visible
+  new Float32Array(24000), // tier 0 — mid distance
   new Float32Array(24000), // tier 1
-  new Float32Array(24000), // tier 2
-  new Float32Array(24000), // tier 3 — closest, most visible
+  new Float32Array(24000), // tier 2 — closest, most visible
 ];
-const _segN = [0, 0, 0, 0];
-// opacity and lineWidth per tier — subtle falloff so lines support particles, not compete
-const TIER_ALPHA = ["0.025", "0.05", "0.08", "0.13"];
-const TIER_WIDTH = [0.4, 0.5, 0.7, 0.9];
+const _segN = [0, 0, 0];
+const tierAlpha = ["0.05", "0.08", "0.13"];
+const tierWidth = [0.5, 0.7, 0.9];
 
 
 function _drawConnections(p, particles) {
-  const MAX_DIST = 80;
-  const MAX_DIST2 = MAX_DIST * MAX_DIST;
-  const CS = MAX_DIST;
+  const maxDist = 80;
+  const maxDist2 = maxDist * maxDist;
+  const CS = maxDist;
 
   // Build spatial grid
-  _connGrid.clear();
-  for (let i = 0; i < particles.length; i++) {
+  connGrid.clear();
+  for (let i = 0; i < particles.length; i += 2) {
     const a = particles[i];
     if (a.dead || a.alpha < 15) continue;
     const cx = Math.floor(a.x / CS) + 2;
     const cy = Math.floor(a.y / CS) + 2;
     const key = cy * 600 + cx;
-    let cell = _connGrid.get(key);
+    let cell = connGrid.get(key);
     if (!cell) {
       cell = [];
-      _connGrid.set(key, cell);
+      connGrid.set(key, cell);
     }
     cell.push(i);
   }
 
-  _segN[0] = _segN[1] = _segN[2] = _segN[3] = 0;
+  _segN[0] = _segN[1] = _segN[2] = 0;
   const NDX = [0, 1, -1, 0, 1];
   const NDY = [0, 0, 1, 1, 1];
 
-  for (const [key, cell] of _connGrid) {
+  for (const [key, cell] of connGrid) {
     const cy = Math.floor(key / 600);
     const cx = key - cy * 600;
 
     for (let ni = 0; ni < 5; ni++) {
       const nkey = (cy + NDY[ni]) * 600 + (cx + NDX[ni]);
-      const nbr = ni === 0 ? cell : _connGrid.get(nkey);
+      const nbr = ni === 0 ? cell : connGrid.get(nkey);
       if (!nbr) continue;
 
       for (let ii = 0; ii < cell.length; ii++) {
@@ -274,10 +278,10 @@ function _drawConnections(p, particles) {
           const dx = a.x - b.x;
           const dy = a.y - b.y;
           const d2 = dx * dx + dy * dy;
-          if (d2 > MAX_DIST2) continue;
+          if (d2 > maxDist2) continue;
 
-          const t = 1 - Math.sqrt(d2) / MAX_DIST; // 0=far, 1=close
-          const tier = Math.min(3, Math.floor(t * 4)); // 0–3
+          const t = 1 - Math.sqrt(d2) / maxDist; // 0=far, 1=close
+          const tier = Math.min(2, Math.floor(t * 3)); // 0–2
           const buf = _segs[tier];
           let n = _segN[tier];
           if (n + 4 <= buf.length) {
@@ -294,11 +298,11 @@ function _drawConnections(p, particles) {
 
   const ctx = p.drawingContext;
   ctx.save();
-  for (let tier = 0; tier < 4; tier++) {
+  for (let tier = 0; tier < 3; tier++) {
     const n = _segN[tier];
     if (n === 0) continue;
-    ctx.lineWidth = TIER_WIDTH[tier];
-    ctx.strokeStyle = `rgba(140, 220, 225, ${TIER_ALPHA[tier]})`;
+    ctx.lineWidth = tierWidth[tier];
+    ctx.strokeStyle = `rgba(140, 220, 225, ${tierAlpha[tier]})`;
     ctx.beginPath();
     const buf = _segs[tier];
     for (let i = 0; i < n; i += 4) {
@@ -394,7 +398,7 @@ class Particle {
     this.vy += (targetVy - this.vy) * 0.08;
 
     // flow velocityField — driven by the WebGL flowfield
-    let flow = sampleFluidVelocity(this.x, this.y, W, H);
+    let flow = _sampleFluidVelocity(this.x, this.y, W, H);
     this.vx += flow.vx * 0.45 * this.reactivity;
     this.vy += flow.vy * 0.45 * this.reactivity;
 
@@ -414,13 +418,13 @@ class Particle {
     if (this.boomed || this.populate || !handMoving) return;
     let o = this.o;
     for (let v of flowVectors) {
-      let speed = o.sqrt(v.vx * v.vx + v.vy * v.vy);
       let dx = this.x - v.x;
       let dy = this.y - v.y;
       let dist = o.sqrt(dx * dx + dy * dy);
-      
+
       if (dist < disruptRadius && dist > 0) {
-        let strength = o.pow(1 - dist / disruptRadius, 2) * 10 * this.reactivity;
+        let strength =
+          o.pow(1 - dist / disruptRadius, 2) * 10 * this.reactivity;
         this.vx += (dx / dist) * strength;
         this.vy += (dy / dist) * strength;
       }
@@ -431,8 +435,8 @@ class Particle {
     if (this.dead) return;
     const o = this.o;
 
-    // ------ Wave influence 
-    const wave = sampleWave(this.x, this.y, waveTime, W, H); // -1 - 1
+    // ------ Wave influence
+    const wave = _sampleWave(this.x, this.y, waveTime, W, H); // -1 - 1
     const waveNorm = (wave + 1) * 0.5; //  0 - 1
 
     // Size: pulse swells at wave crests
@@ -442,9 +446,10 @@ class Particle {
 
     // Color: golden for fingertip-spawned, teal/white for ambient
     const hue = this.type === P_POPULATE ? 38 + wave * 14 : 185 + wave * 12;
-    const sat = this.type === P_POPULATE
-      ? Math.max(0, 75 - waveNorm * 40) // rich gold, whites at crest
-      : Math.max(0, 38 - waveNorm * 38); // teal → white
+    const sat =
+      this.type === P_POPULATE
+        ? Math.max(0, 75 - waveNorm * 40) // rich gold, whites at crest
+        : Math.max(0, 38 - waveNorm * 38); // teal → white
     const bri = Math.min(100, 35 + waveNorm * 65);
     const a = this.alpha / 100;
 
