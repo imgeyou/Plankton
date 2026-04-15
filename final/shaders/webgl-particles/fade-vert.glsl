@@ -1,8 +1,8 @@
 #version 300 es
 // WebGL2 for gpu-canvas.js
 
-//fading effect: 
-// Full-screen triangle, used together with fade
+// fading effect: 
+// draw bigggggg triangle, cover whole screen, used together with fade
 
 void main() {
   vec2 pos[3];

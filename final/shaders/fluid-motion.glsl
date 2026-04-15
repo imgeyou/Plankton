@@ -1,5 +1,4 @@
-// https://github.com/JoTrdl/starfluid/blob/master/src/shaders/motion.html | Copyright (c) 2015 Johann Troendle
-// modified: single averaged-tip injection, dye removed, wider radius
+// Adapted from: https://github.com/JoTrdl/starfluid/blob/master/src/shaders/motion.html | Copyright (c) 2015 Johann Troendle
 
 precision highp float;
 varying vec2 vUv;

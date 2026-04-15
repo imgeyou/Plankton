@@ -1,4 +1,4 @@
-// https://github.com/JoTrdl/starfluid/blob/master/src/shaders/particles.html | Copyright (c) 2015 Johann Troendle
+// Adapted from: https://github.com/JoTrdl/starfluid/blob/master/src/shaders/particles.html | Copyright (c) 2015 Johann Troendle
 
 //particle style
 precision highp float;

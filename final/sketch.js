@@ -1,4 +1,4 @@
-//------- Condortable p5 world :))))) -------//
+//Adapted from: https://editor.p5js.org/shinjia168/sketches/NXUrGxzye
 
 let pip, canvas;
 

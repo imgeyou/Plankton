@@ -1,4 +1,4 @@
-// https://github.com/JoTrdl/starfluid/blob/master/src/shaders/fluid.html | Copyright (c) 2015 Johann Troendle
+// Adapted from: https://github.com/JoTrdl/starfluid/blob/master/src/shaders/fluid.html | Copyright (c) 2015 Johann Troendle
 
 
 //Navier-Stokes physics - flow field

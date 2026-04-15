@@ -1,11 +1,18 @@
-// this is for gesture and audio detection
+//Adapted from: https://editor.p5js.org/shinjia168/sketches/NXUrGxzye
 
-// Exports:
-// 1. flowVector, flowVectorWH, indexTipWH — fingertip positions and velocities
-// 2. handMoving   — true if any fingertip moved faster than M_sensitivity px/frame
-// 3. foxGesture   — true if the fox hand shape is held (latched for FoxGesture_Latch)
-// 4.volumeSpike  — true if mic volume spiked above the rolling average
-// - read each frame by cpu-canvas.js / sketch.js
+// this is for hand tracking + audio detection
+// Called every frame from motion.js (updateHandDetection).
+
+// Exports read by cpu-canvas.js and gpu-canvas.js:
+//   flowVector: averaged fingertip pos + vel in screen pixel
+//   flowVectorWH: same, normalised to uv space (0–1)
+//   indexTipWH: index fingertip pos + vel in uv
+//   handMoving: true when hand speed > M_sensitivity px/frame
+//   indexOnly: true when only index finger is extended
+//   foxGesture: true when index + pinky up, middle + ring curled
+//   volumeSpike: true when mic spikes above average
+//   normTips: raw MediaPipe 0–1 coords
+//   fingertips: screen-pixel coords, x-mirrored
 
 
 

@@ -17,9 +17,9 @@ void main() {
   a  = a * a;  // sharpen falloff
 
   // teal normally, golden during IndexOnly gesture
-  vec3 teal = vec3(0.28, 0.82, 0.92);
+  vec3 teal   = vec3(0.28, 0.82, 0.92);
   vec3 golden = vec3(1.00, 0.75, 0.22);
-  vec3 col = mix(teal, golden, vIndex) * vBright; //switch between the two color
+  vec3 col = mix(teal, golden, vIndex) * vBright * (1.0 + vIndex * 1.0);
 
-  fragColor = vec4(col * a, a * 0.80);
+  fragColor = vec4(col * a, a * mix(0.80, 1.0, vIndex));
 }
