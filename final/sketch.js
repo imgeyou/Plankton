@@ -63,22 +63,22 @@ let sketch = function (p) {
     }
   };
 
-  // p.drawLines = function (index) {
-  //   p.stroke(0, 0, 255);
-  //   p.strokeWeight(3);
-  //   for (let i = 0; i < detections.multiHandLandmarks.length; i++) {
-  //     for (let j = 0; j < index.length - 1; j++) {
-  //       let x = detections.multiHandLandmarks[i][index[j]].x * p.width;
-  //       let y = detections.multiHandLandmarks[i][index[j]].y * p.height;
-  //       // let z = detections.multiHandLandmarks[i][index[j]].z;
+  p.drawLines = function (index) {
+    p.stroke(0, 0, 255);
+    p.strokeWeight(3);
+    for (let i = 0; i < detections.multiHandLandmarks.length; i++) {
+      for (let j = 0; j < index.length - 1; j++) {
+        let x = detections.multiHandLandmarks[i][index[j]].x * p.width;
+        let y = detections.multiHandLandmarks[i][index[j]].y * p.height;
+        // let z = detections.multiHandLandmarks[i][index[j]].z;
 
-  //       let _x = detections.multiHandLandmarks[i][index[j + 1]].x * p.width;
-  //       let _y = detections.multiHandLandmarks[i][index[j + 1]].y * p.height;
-  //       // let _z = detections.multiHandLandmarks[i][index[j+1]].z;
-  //       p.line(x, y, _x, _y);
-  //     }
-  //   }
-  // };
+        let _x = detections.multiHandLandmarks[i][index[j + 1]].x * p.width;
+        let _y = detections.multiHandLandmarks[i][index[j + 1]].y * p.height;
+        // let _z = detections.multiHandLandmarks[i][index[j+1]].z;
+        p.line(x, y, _x, _y);
+      }
+    }
+  };
 };
 
 let sketchWindow = new p5(sketch);
