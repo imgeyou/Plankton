@@ -2,23 +2,24 @@
 precision mediump float;
 
 in float vBright;
-in float vFox;    // 1.0 = fox gesture active
+in float vIndex; // 1.0 = index0nly gesture active
 
 out vec4 fragColor;
 
 void main() {
-  // Soft circular point sprite
-  vec2  c = gl_PointCoord - 0.5;
-  float d = length(c);
-  if (d > 0.5) discard;
+  // draw particle circle
+  vec2  c = gl_PointCoord - 0.5; // shift origin from (0,0) to center (0.5,0.5)
+  float d = length(c); //calculate length
+  if (d > 0.5) discard; // kill vec outside of radius
 
-  float a = 1.0 - d * 2.0;
+  //falloff for alpha
+  float a = 1.0 - d * 2.0; 
   a  = a * a;  // sharpen falloff
 
-  // Teal normally, golden during fox gesture (index + pinky up)
-  vec3 teal   = vec3(0.28, 0.82, 0.92);
+  // teal normally, golden during IndexOnly gesture
+  vec3 teal = vec3(0.28, 0.82, 0.92);
   vec3 golden = vec3(1.00, 0.75, 0.22);
-  vec3 col    = mix(teal, golden, vFox) * vBright;
+  vec3 col = mix(teal, golden, vIndex) * vBright; //switch between the two color
 
   fragColor = vec4(col * a, a * 0.80);
 }

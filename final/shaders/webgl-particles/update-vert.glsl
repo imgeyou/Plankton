@@ -24,7 +24,7 @@ void main() {
   vec2 pos = aPos;
   vec2 vel = aVel;
 
-  // 1. Sine-wave drift
+  // 1. sine-wave drift
   vel += vec2(
     sin(pos.y * 3.1 + uTime * 0.7),
     cos(pos.x * 2.8 + uTime * 0.5)
@@ -36,34 +36,36 @@ void main() {
   // 3. hand influence
   if (uHasHand == 1) {
   float radius  = uHandMoving == 1 ? 0.22 : 0.14;
-  float attract = uIndexOnly == 1 ? -1.0 : 1.0; // negative -> attract
+  float influDirection = uIndexOnly == 1 ? -1.0 : 1.0; // negative -> attract
 
+  //calculate influence of fingerTips on particles, based on dist
   vec2  diff = pos - uTip;
   float dist = length(diff);
+
   if (dist < radius && dist > 0.001) {
     float falloff = 1.0 - dist / radius;
 
-    // Gentle radial part — just opens a path, doesn't dominate
-    vel += attract * normalize(diff) * (falloff * falloff * 0.004);
+    //influDirection: positive-> repel; negative-> attract
+    vel += influDirection * normalize(diff) * (falloff * falloff * 0.004);
 
-    // Current — particles stream in the direction the hand moves
-    // uFlow is already in UV/frame (normalised in detection.js), no extra divide needed
-    vel += uFlow * 0.5 * falloff;
+    // introduce flowField influence
+    vel += uFlow * 0.5;
   }
-  } // end uHasHand
+  }
 
-  // 4. Volume spike: radial burst outward from screen centre
+  // 4. volume spike: burst outward from the centre
   if (uVolumeSpike == 1) {
+    //direction: from screen center to particle
     vec2 dir = pos - vec2(0.5, 0.5);
     if (length(dir) > 0.001) vel += normalize(dir) * 0.009;
   }
 
-  // 5. Damping + speed clamp
+  // 5. damping + speed clamp
   vel *= 0.963;
   float spd = length(vel);
   if (spd > 0.02) vel = normalize(vel) * 0.02;
 
-  // 6. Integrate & wrap (torus topology)
+  // 6. integrate & wrap
   pos = fract(pos + vel + 1.0);
 
   vPos = pos;

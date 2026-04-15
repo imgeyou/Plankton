@@ -1,14 +1,14 @@
 #version 300 es
 precision highp float;
 
-layout(location = 0) in vec2 aPos;   // uv position
+layout(location = 0) in vec2 aPos;// uv position
 
 uniform int  uHasHand;
 uniform vec2 uTip;
 uniform int  uIndexOnly;
 
 out float vBright;
-out float vFox;
+out float vIndex;
 
 void main() {
   // 0-1 uv space to -1-1
@@ -28,7 +28,7 @@ void main() {
   gl_PointSize = 1.5 + min((bright - 0.3) * 0.9, 3.2);
 
   vBright = bright;
-  vFox    = float(uIndexOnly);
+  vIndex    = float(uIndexOnly);
 }
 
  
