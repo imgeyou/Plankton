@@ -10,8 +10,8 @@
 
 
 // --------- Shared state
-const W = window.height
-const H = window.width
+const W = window.innerWidth
+const H = window.innerHeight
 
 let normTips = []; // MediaPipe 0–1 normalised coords  [{x,y}, …]
 let fingertips = []; // canvas-pixel coords, selfie-mirrored [{x,y}, …]

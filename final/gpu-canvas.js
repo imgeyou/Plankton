@@ -4,7 +4,6 @@
 (function () {
   // ----- Dark background-> later will be blended with CPU canvas
   document.documentElement.style.background = "#000";
-  document.body.style.background = "#000";
 
   // ------- Canvas
   const canvas = document.getElementById("webgl-canvas");
