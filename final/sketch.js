@@ -13,7 +13,7 @@ let sketch = function (p) {
   };
 
   p.draw = function () {
-    p.clear();
+    p.background(0);
     if (detections != undefined) {
       if (detections.multiHandLandmarks != undefined) {
         p.drawLines([0, 5, 9, 13, 17, 0]); //palm
