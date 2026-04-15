@@ -1,3 +1,6 @@
+//this is for the p5.js canvas, run by CPU, with flowfield imported from webGL
+//render: particles and their connections (resembling planktons)
+
 let particles = [];
 
 // ----- state variables
@@ -140,7 +143,7 @@ let effect = function (p) {
     const waveTime = p.frameCount * 0.016; // wave animation time
     for (let pt of particles) {
       pt.update(p.width, p.height);
-      pt._applyRepulsion(flowVectors);
+      pt._applyRepulsion(flowVector);
     }
     particles = particles.filter((pt) => !pt.dead);
     _drawConnections(p, particles);
@@ -411,14 +414,14 @@ class Particle {
       this.dead = true;
   }
 
-  _applyRepulsion(flowVectors) {
+  _applyRepulsion(flowVector) {
     if (this.boomed || this.populate || !handMoving) return;
     let o = this.o;
-    for (let v of flowVectors) {
-      let speed = o.sqrt(v.vx * v.vx + v.vy * v.vy);
-      let dx = this.x - v.x;
-      let dy = this.y - v.y;
-      let dist = o.sqrt(dx * dx + dy * dy);
+    let v = flowVector;
+
+    let dx = this.x - v.x;
+    let dy = this.y - v.y;
+    let dist = o.sqrt(dx * dx + dy * dy);
       
       if (dist < disruptRadius && dist > 0) {
         let strength = o.pow(1 - dist / disruptRadius, 2) * 10 * this.reactivity;
@@ -426,7 +429,6 @@ class Particle {
         this.vy += (dy / dist) * strength;
       }
     }
-  }
 
   draw(waveTime, W, H) {
     if (this.dead) return;
@@ -467,5 +469,4 @@ class Particle {
     // }
   }
 }
-
 let effectWindow = new p5(effect);

@@ -1,4 +1,7 @@
 #version 300 es
+// WebGL2 for gpu-canvas.js
+
+
 // Full-screen triangle — covers the viewport with no VBO needed.
 // Used to dim (fade) the previous frame for the trail decay effect.
 void main() {

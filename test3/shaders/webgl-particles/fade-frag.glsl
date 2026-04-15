@@ -1,13 +1,16 @@
 #version 300 es
-precision mediump float;
+// WebGL2 for gpu-canvas.js
 
-// uFade: fraction of brightness to retain each frame (e.g. 0.89).
+//fading effect: 
 // Paired with blendFunc(ZERO, ONE_MINUS_SRC_ALPHA):
-//   result = dst * (1 - srcAlpha) = dst * uFade
-uniform float uFade;
+// result = destination * (1 - srcAlpha) = destination * pFade
 
+
+precision mediump float;
+uniform float pFade;
 out vec4 fragColor;
 
 void main() {
-  fragColor = vec4(0.0, 0.0, 0.0, 1.0 - uFade);
+  //particles slowly fade away -> leave trail
+  fragColor = vec4(0.0, 0.0, 0.0, 1.0 - pFade);
 }

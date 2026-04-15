@@ -9,7 +9,7 @@ uniform vec2  uPoint;    // averaged fingertip UV position (0-1)
 uniform vec2  uVelocity; // averaged velocity, normalised to screen size
 
 const float VELOCITY_RADIUS = 300.0; // lower = wider Gaussian spread
-const float STRENGTH = 150.0;
+const float STRENGTH = 200.0;
 
 void main() {
   gl_FragColor = texture2D(tSampler, vUv);

@@ -27,20 +27,12 @@
         .render();
 
       this.uniforms.solver = {type: 't', value: this.solver.output};
-
-      this.dye = new RTT(gl, {
-        width: CELLS,
-        height: CELLS,
-        texture: {  type: gl.FLOAT , minFilter: gl.LINEAR, magFilter: gl.LINEAR }
-      }).fragment(document.getElementById('fluid-dye').textContent, this.uniforms)
-        .render();
     },
     
     update: function(ctx) {
       this.uniforms.motion.value = ctx.effects['motion'].motion.output;
       this.solver.render();
       this.uniforms.solver.value = this.solver.output;
-      this.dye.render();
     }
 
   });

@@ -10,9 +10,13 @@
 
 
 // --------- Shared state
+const W = window.height
+const H = window.width
+
 let normTips = []; // MediaPipe 0–1 normalised coords  [{x,y}, …]
 let fingertips = []; // canvas-pixel coords, selfie-mirrored [{x,y}, …]
-let flowVectors = []; // per-fingertip velocity [{x,y,vx,vy}, …]
+let flowVector = { x: 0, y: 0, vx: 0, vy: 0, v: 0 };
+let flowVectorWH = { x: 0, y: 0, vx: 0, vy: 0, v: 0 };
 
 let handMoving = false;
 let foxGesture = false;
@@ -94,7 +98,7 @@ document.getElementById("start-overlay").addEventListener("click", () => {
 // ------ Per-frame update: gesture, audio
 
 //called in cpu-canvas.js(p5.js) update
-function updateHandDetection(width, height) {
+function updateHandDetection() {
   // 1. Collect fingertip positions
   // (thumb=4, index=8, middle=12, ring=16, pinky=20)
 
@@ -109,7 +113,7 @@ function updateHandDetection(width, height) {
         //mediapipe pos (0-1 scale)
         normTips.push({ x: lm.x, y: lm.y });
         //screen pos: adapted to screen size + mirror x-axis
-        fingertips.push({ x: (1 - lm.x) * width, y: lm.y * height });
+        fingertips.push({ x: (1 - lm.x) * W, y: lm.y * H });
         if (hand[8].y < hand[5].y) indexUp = true;
         else indexUp = false;
         if (hand[12].y > hand[9].y) middleDown = true;
@@ -124,18 +128,34 @@ function updateHandDetection(width, height) {
     }
   }
 
-  // 2. calculate per-fingertip velocity -> flow vectors
-  flowVectors = fingertips.map((tip, i) => {
-    const old = _oldFingertips[i];
-    if (!old) return { x: tip.x, y: tip.y, vx: 0, vy: 0, v: 0 };
-    const vx = tip.x - old.x;
-    const vy = tip.y - old.y;
-    return { x: tip.x, y: tip.y, vx, vy, v: Math.sqrt(vx * vx + vy * vy) };
-  });
+  // 2. average all fingertips into a single flow vector
+  if (fingertips.length > 0) {
+    const n = fingertips.length;
+    let ax = 0, ay = 0, avx = 0, avy = 0;
+    for (let i = 0; i < n; i++) {
+      ax += fingertips[i].x;
+      ay += fingertips[i].y;
+      const old = _oldFingertips[i];
+      if (old) { avx += fingertips[i].x - old.x; avy += fingertips[i].y - old.y; }
+    }
+    const x = ax / n; 
+    const y = ay / n
+    const vx = avx / n;
+    const vy = avy / n;
+    flowVector = { x, y, vx, vy, v: Math.sqrt(vx * vx + vy * vy) };
+    const x_WH = x / W; 
+    const y_WH = y / H;
+    const vx_WH = vx / W;
+    const vy_WH = vy / H;
+    flowVectorWH = {x_WH, y_WH, vx_WH, vy_WH, v: Math.sqrt(vx_WH * vx_WH + vy_WH * vy_WH) }
+  } else {
+    return;
+  }
+  
   _oldFingertips = fingertips.slice();
 
   // 3. Hand-moving detection
-  handMoving = flowVectors.some(v => v.v > M_sensitivity);
+  handMoving = flowVector.v > M_sensitivity;
 
   // 4. IndexOnly gesture detection
   indexOnly = false;

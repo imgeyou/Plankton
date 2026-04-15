@@ -1,19 +1,8 @@
-// webgl-particles.js
-
-// Reads each frame (globals set by detection.js):
-//   fingertips   — [{x,y}] screen-pixel positions, x-mirrored to match canvas
-//   flowVectors  — [{x,y,vx,vy}] per-fingertip velocity in screen pixels/frame
-//   foxGesture   — boolean: index+pinky up (attract mode)
-//   handMoving   — boolean: hand moving faster than threshold
-//   volumeSpike  — boolean: mic volume spiked
-//
-// Architecture:
-//   Two ping-pong VBO sets (A / B) each holding [pos.xy, vel.xy] per particle.
-//   Transform Feedback updates physics entirely on the GPU each frame.
-//   A fade quad dims the previous frame to create glowing trails.
+//this is for the webGL canvas, reading flowvector from detection.js and let it influence particle movement
+//render: subtle particle flows (resembling water flow in the foreground)
 
 (function () {
-  // ----- Dark background
+  // ----- Dark background-> later will be blended with CPU canvas
   document.documentElement.style.background = "#000";
   document.body.style.background = "#000";
 
@@ -23,12 +12,11 @@
   const gl = canvas.getContext("webgl2", {
     alpha: false,
     premultipliedAlpha: false,
-    preserveDrawingBuffer: true, // keep frame content for trail fade
+    preserveDrawingBuffer: true,
     antialias: false,
   });
 
-
-  // ------ webgl suppport check
+  // ------ webgl support check
   if (!gl) {
     console.warn("[webgl-particles] WebGL2 not supported — disabled.");
     canvas.remove();
@@ -43,15 +31,15 @@
   resize();
   window.addEventListener("resize", resize);
 
-  // ----- Load shaders from DOM (injected by shaders/load-shaders.js)
-  const FADE_VS   = document.getElementById("wp-fade-vert").textContent;
-  const FADE_FS   = document.getElementById("wp-fade-frag").textContent;
-  const DUMMY_FS  = document.getElementById("wp-dummy-frag").textContent;
-  const UPDATE_VS = document.getElementById("wp-update-vert").textContent;
-  const RENDER_VS = document.getElementById("wp-render-vert").textContent;
-  const RENDER_FS = document.getElementById("wp-render-frag").textContent;
+  // ----- Load shaders from DOM
+  const fadeVer   = document.getElementById("wp-fade-vert").textContent.trim();
+  const fadeFra   = document.getElementById("wp-fade-frag").textContent.trim();
+  const emptyFra  = document.getElementById("wp-dummy-frag").textContent.trim();
+  const updateVer = document.getElementById("wp-update-vert").textContent.trim();
+  const renderVer = document.getElementById("wp-render-vert").textContent.trim();
+  const renderFra = document.getElementById("wp-render-frag").textContent.trim();
 
-  // ----- Compile helpers 
+  // ----- Compile shaders 
   function compileShader(type, src) {
     const shader = gl.createShader(type);
     gl.shaderSource(shader, src);
@@ -69,6 +57,8 @@
 
   function linkProgram(vsSrc, fsSrc, tfVaryings) {
     const vs = compileShader(gl.VERTEX_SHADER, vsSrc);
+    if (!vs) return null;
+    
     const prog = gl.createProgram();
     gl.attachShader(prog, vs);
 
@@ -91,17 +81,19 @@
     return prog;
   }
 
-  // ─── Programs ───────────────────────────────────────────────────────────────
-  const fadeProg = linkProgram(FADE_VS, FADE_FS);
-  const updateProg = linkProgram(UPDATE_VS, DUMMY_FS, ["vPos", "vVel"]);
-  const renderProg = linkProgram(RENDER_VS, RENDER_FS);
+  // ----- Programs 
+  const fadeProg = linkProgram(fadeVer, fadeFra);
+  const updateProg = linkProgram(updateVer, emptyFra, ["vPos", "vVel"]);
+  const renderProg = linkProgram(renderVer, renderFra);
   if (!fadeProg || !updateProg || !renderProg) return;
 
-  // ─── Particle buffers ───────────────────────────────────────────────────────
+  // ----- Particle buffers 
+  //particle num
   const N = 30000;
 
   const initPos = new Float32Array(N * 2);
   const initVel = new Float32Array(N * 2);
+
   for (let i = 0; i < N; i++) {
     initPos[i * 2] = Math.random();
     initPos[i * 2 + 1] = Math.random();
@@ -109,6 +101,7 @@
     initVel[i * 2 + 1] = (Math.random() - 0.5) * 0.002;
   }
 
+  //bind buffer for pos and velocity
   function makeBufs(posData, velData) {
     const pos = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, pos);
@@ -120,6 +113,7 @@
 
     return { pos, vel };
   }
+
 
   const bufA = makeBufs(initPos, initVel);
   const bufB = makeBufs(new Float32Array(N * 2), new Float32Array(N * 2));
@@ -148,21 +142,16 @@
 
   const vaoA = makeVAO(bufA);
   const vaoB = makeVAO(bufB);
-  // Clear ARRAY_BUFFER after VAO setup — makeVAO leaves bufB.vel bound to
-  // ARRAY_BUFFER; if tfB later writes to bufB.vel, WebGL sees the same buffer
-  // on two targets simultaneously → GL_INVALID_OPERATION.
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-  const tfA = makeTF(bufA); // tfA  writes INTO bufA
-  const tfB = makeTF(bufB); // tfB  writes INTO bufB
+  const tfA = makeTF(bufA);
+  const tfB = makeTF(bufB);
 
-  // idx=0: read vaoA → write tfB (→bufB) → render vaoB
-  // idx=1: read vaoB → write tfA (→bufA) → render vaoA
   const vaos = [vaoA, vaoB];
   const tfs = [tfB, tfA];
   let idx = 0;
 
-  // ─── Uniforms ───────────────────────────────────────────────────────────────
+  // ----- Uniforms 
   function locs(prog, names) {
     gl.useProgram(prog);
     const out = {};
@@ -183,57 +172,44 @@
   ]);
   const renU = locs(renderProg, ["uNumTips", "uTips", "uFoxGesture"]);
 
-  const tipArr = new Float32Array(20);
-  const flowArr = new Float32Array(20);
-
-  // ─── Initial clear ──────────────────────────────────────────────────────────
+  // ---- Initial clear 
   gl.clearColor(0.01, 0.01, 0.02, 1.0);
   gl.clear(gl.COLOR_BUFFER_BIT);
 
-  // ─── Render loop ────────────────────────────────────────────────────────────
+  // ----- Render loop 
   let time = 0;
 
   function frame() {
     requestAnimationFrame(frame);
     time += 0.016;
 
-    const W = canvas.width;
-    const H = canvas.height;
-
-    // ── Call hand detection update (was in cpu-canvas.js draw loop) ──────────
-    if (typeof updateHandDetection === "function") {
-      updateHandDetection(W, H);
+    // ----- Gather states from detection.js 
+    let W = canvas.width;
+    let H = canvas.height;
+    let numTips = 0;
+    let tipArr = [0, 0];
+    let flowArr = [0, 0];
+    
+    if (typeof flowVectorWH !== "undefined" && flowVectorWH) {
+      numTips = 1;
+      tipArr = [flowVectorWH.x_WH, flowVectorWH.y_WH];
+      flowArr = [flowVectorWH.vx_WH, flowVectorWH.vy_WH];
     }
-
-    // ── Gather detection globals ──────────────────────────────────────────────
-    const tips = typeof fingertips !== "undefined" ? fingertips : [];
-    const flows = typeof flowVectors !== "undefined" ? flowVectors : [];
+    
     const fox = typeof foxGesture !== "undefined" && foxGesture ? 1 : 0;
     const moving = typeof handMoving !== "undefined" && handMoving ? 1 : 0;
     const spike = typeof volumeSpike !== "undefined" && volumeSpike ? 1 : 0;
 
-    const numTips = Math.min(tips.length, 10);
-    tipArr.fill(0);
-    flowArr.fill(0);
-    for (let i = 0; i < numTips; i++) {
-      tipArr[i * 2] = tips[i].x / W;
-      tipArr[i * 2 + 1] = tips[i].y / H;
-      if (flows[i]) {
-        flowArr[i * 2] = flows[i].vx;
-        flowArr[i * 2 + 1] = flows[i].vy;
-      }
-    }
-
     const readVAO = vaos[idx];
     const writeTF = tfs[idx];
-    const drawVAO = vaos[1 - idx]; // render from the just-written buffer
+    const drawVAO = vaos[1 - idx];
 
-    // ------ 1. Fade pass — darken previous frame for trail effect 
+    // ------ 1. Fade pass
     gl.enable(gl.BLEND);
-    gl.blendFunc(gl.ZERO, gl.ONE_MINUS_SRC_ALPHA); // result = dst * (1 - srcAlpha)
+    gl.blendFunc(gl.ZERO, gl.ONE_MINUS_SRC_ALPHA);
     gl.useProgram(fadeProg);
-    gl.uniform1f(fadeU.uFade, 0.82); // retain 89% brightness per frame
-    gl.drawArrays(gl.TRIANGLES, 0, 3); // fullscreen triangle, no VAO needed
+    gl.uniform1f(fadeU.uFade, 0.82);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
 
     // ------ 2. Update pass 
     gl.disable(gl.BLEND);
@@ -247,7 +223,7 @@
     gl.uniform1i(updU.uHandMoving, moving);
     gl.uniform1i(updU.uVolumeSpike, spike);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, null); // ensure no ARRAY_BUFFER overlaps TF outputs
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
     gl.bindVertexArray(readVAO);
     gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, writeTF);
     gl.enable(gl.RASTERIZER_DISCARD);
@@ -258,9 +234,9 @@
     gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, null);
     gl.bindVertexArray(null);
 
-    // ── 3. Render pass — draw updated particles ───────────────────────────────
+    // ------ 3. Render pass
     gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE); // additive for glow
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
     gl.useProgram(renderProg);
     gl.uniform1i(renU.uNumTips, numTips);
     gl.uniform2fv(renU.uTips, tipArr);

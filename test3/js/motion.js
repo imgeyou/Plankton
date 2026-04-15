@@ -32,26 +32,20 @@
     update: function (ctx) {
       this.ctx = ctx;
 
-      // Average all available fingertip positions and velocities
-      var tips  = typeof fingertips  !== 'undefined' ? fingertips  : [];
-      var flows = typeof flowVectors !== 'undefined' ? flowVectors : [];
-      var n = tips.length;
-
-      if (n > 0) {
-        var ax = 0, ay = 0, avx = 0, avy = 0;
-        for (var i = 0; i < n; i++) {
-          ax  += tips[i].x;
-          ay  += tips[i].y;
-          if (flows[i]) { avx += flows[i].vx; avy += flows[i].vy; }
-        }
-        this.uniforms.uPoint.value    = [ax / n / ctx.width,  ay / n / ctx.height];
-        this.uniforms.uVelocity.value = [avx / n / ctx.width, avy / n / ctx.height];
-      } else {
-        this.uniforms.uVelocity.value = [0, 0];
-      }
-
-      this.motion.render();
-    },
+    
+    // ── Call hand detection update (was in cpu-canvas.js draw loop) 
+    if (typeof updateHandDetection === "function") {
+      updateHandDetection();
+    }
+    var f = typeof flowVector !== 'undefined' ? flowVector : null;
+    if(flowVector){
+      this.uniforms.uPoint.value = [f.x, f.y];
+    this.uniforms.uVelocity.value = [f.vx, f.vy];
+    } else {
+      this.uniforms.uPoint.value = [0, 0];
+      this.uniforms.uVelocity.value = [0, 0];
+    }
+  },
 
     resize: function (ctx) {
       this.ctx = ctx;
